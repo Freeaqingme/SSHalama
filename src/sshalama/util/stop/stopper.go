@@ -88,3 +88,25 @@ func (s *Stopper) Stop() {
 func (s *Stopper) IsStopping() bool {
 	return s.stopping
 }
+
+func (s *Stopper) Run() {
+	if s.callback != nil {
+		s.callback()
+	}
+}
+
+func (s *Stopper) Unregister() {
+	trackedStoppers.Lock()
+	defer trackedStoppers.Unlock()
+
+	for i := range trackedStoppers.stoppers {
+		if trackedStoppers.stoppers[i] != s {
+			continue
+		}
+
+		copy(trackedStoppers.stoppers[i:], trackedStoppers.stoppers[i+1:])
+		trackedStoppers.stoppers[len(trackedStoppers.stoppers)-1] = nil
+		trackedStoppers.stoppers = trackedStoppers.stoppers[:len(trackedStoppers.stoppers)-1]
+		break
+	}
+}

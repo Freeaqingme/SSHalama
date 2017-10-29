@@ -24,6 +24,8 @@ import (
 	"runtime"
 	"time"
 
+	"sshalama/util/stop"
+
 	"github.com/opencontainers/runc/libcontainer"
 	"github.com/opencontainers/runc/libcontainer/configs"
 	_ "github.com/opencontainers/runc/libcontainer/nsenter"
@@ -301,13 +303,15 @@ func (s *localMode) spawnWorker() (net.Conn, error) {
 		log.Fatal(err)
 	}
 
+	noNewPrivs := true
 	process := &libcontainer.Process{
 		Args: []string{"/bin/sshalama-worker"},
 		Env:  []string{"PATH=/bin"},
 		//User:   "dolf",
-		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		NoNewPrivileges: &noNewPrivs,
+		Stdin:           os.Stdin,
+		Stdout:          os.Stdout,
+		Stderr:          os.Stderr,
 		ExtraFiles: []*os.File{
 			workerConnFd,
 		},
@@ -320,16 +324,19 @@ func (s *localMode) spawnWorker() (net.Conn, error) {
 	}
 
 	go func() {
+		stopper := stop.NewStopper(func() {
+			container.Destroy()
+			serverConn.Close()
+			workerConn.Close()
+		})
+
 		_, err = process.Wait()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		// destroy the container.
-		container.Destroy()
-
-		serverConn.Close()
-		workerConn.Close()
+		stopper.Run()
+		stopper.Unregister()
 	}()
 
 	return serverConn, nil

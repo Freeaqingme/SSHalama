@@ -26,16 +26,14 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func (w *worker) handleShell(channel ssh.Channel, p *ptyContainer) {
-	log.Print("creating pty...")
-	// Create new pty
-	if err := p.Open(); err != nil {
+func (w *worker) handleShell(channel ssh.Channel, pty *ptyContainer) {
+	if err := pty.Open(); err != nil {
 		log.Fatalf("could not start pty (%s)", err)
 	}
 
 	cmd := exec.Command("/bin/bash")
-	cmd.Env = append(p.env.GetAsSlice([]string{"TERM"}), "TERM=xterm")
-	err := PtyRun(cmd, p.tty)
+	cmd.Env = append(pty.env.GetAsSlice([]string{"TERM"}), "TERM=xterm")
+	err := PtyRun(cmd, pty.tty)
 	if err != nil {
 		log.Printf("%s", err)
 	}
@@ -48,12 +46,12 @@ func (w *worker) handleShell(channel ssh.Channel, p *ptyContainer) {
 
 	// Pipe session to bash and visa-versa
 	go func() {
-		io.Copy(channel, p.pty)
+		io.Copy(channel, pty.pty)
 		once.Do(close)
 	}()
 
 	go func() {
-		io.Copy(p.pty, channel)
+		io.Copy(pty.pty, channel)
 		once.Do(close)
 	}()
 }
@@ -68,7 +66,7 @@ func PtyRun(c *exec.Cmd, tty *os.File) (err error) {
 	c.Stderr = tty
 	c.SysProcAttr = &syscall.SysProcAttr{
 		Setctty: true,
-		Setsid:  true,
+		Setsid:  true, // TODO: Evaluate me?
 	}
 	return c.Start()
 }

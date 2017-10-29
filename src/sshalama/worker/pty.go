@@ -18,10 +18,8 @@ package main
 import (
 	"encoding/binary"
 	"os"
-	"syscall"
-	"unsafe"
 
-	"github.com/kr/pty"
+	"github.com/Freeaqingme/pty"
 )
 
 type ptyContainer struct {
@@ -81,21 +79,5 @@ func (p *ptyContainer) setWindowSize() {
 		return
 	}
 
-	ws := &struct {
-		h uint16
-		w uint16
-		x uint16
-		y uint16
-	}{
-		h: uint16(p.height),
-		w: uint16(p.width),
-		x: 0,
-		y: 0,
-	}
-
-	syscall.Syscall(
-		syscall.SYS_IOCTL, p.pty.Fd(),
-		uintptr(syscall.TIOCSWINSZ),
-		uintptr(unsafe.Pointer(ws)),
-	)
+	pty.SetSize(p.pty, uint(p.height), uint(p.width))
 }

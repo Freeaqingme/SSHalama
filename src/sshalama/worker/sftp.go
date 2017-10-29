@@ -16,11 +16,12 @@
 package main
 
 import (
-	"github.com/pkg/sftp"
-	"golang.org/x/crypto/ssh"
 	"io"
 	"log"
 	"os"
+
+	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
 )
 
 func (w *worker) handleSftp(channel ssh.Channel) {

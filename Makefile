@@ -27,7 +27,7 @@ binary: LDFLAGS += -X "main.buildTag=v$(VERSION)"
 binary: LDFLAGS += -X "main.buildTime=$(shell date -u '+%Y-%m-%d %H:%M:%S UTC')"
 binary: # assets
 	go install -tags '$(BUILDTAGS)' -ldflags '$(LDFLAGS)' sshalama
-	go build -tags '$(BUILDTAGS)' -o ./bin/sshalama-worker ./src/sshalama/worker/*.go
+	go install -tags '$(BUILDTAGS)' -ldflags '$(LDFLAGS)' sshalama/worker
 #	go install -race -tags '$(BUILDTAGS)' -ldflags '$(LDFLAGS)' sshalama
 
 .PHONY: release

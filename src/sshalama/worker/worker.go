@@ -15,8 +15,6 @@
 // limitations under the License.
 package main
 
-import "C"
-
 import (
 	"fmt"
 	"log"
@@ -28,24 +26,22 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func main() {}
-
 type worker struct{}
 
-//export Run
-func Run() int {
+func main() {
+
 	log.SetPrefix(strconv.Itoa(os.Getpid()) + " ")
 
 	conn, err := net.FileConn(os.NewFile(3, "unix"))
 	if err != nil {
 		log.Print("failed to accept incoming connection", err)
-		return 1
+		os.Exit(1)
 	}
 
 	w := &worker{}
 	w.handleConn(conn)
 
-	return 0
+	os.Exit(0)
 }
 
 func (w *worker) setProcessName(c ssh.ConnMetadata) {

@@ -26,9 +26,9 @@ import (
 
 	"sshalama/util/stop"
 
-	"github.com/opencontainers/runc/libcontainer"
-	"github.com/opencontainers/runc/libcontainer/configs"
-	_ "github.com/opencontainers/runc/libcontainer/nsenter"
+	"github.com/Freeaqingme/opencontainers-runc/libcontainer"
+	"github.com/Freeaqingme/opencontainers-runc/libcontainer/configs"
+	_ "github.com/Freeaqingme/opencontainers-runc/libcontainer/nsenter"
 	"github.com/prep/socketpair"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sys/unix"

@@ -114,97 +114,33 @@ func (s *localMode) spawnWorker() (net.Conn, error) {
 		log.Fatal(err)
 	}
 
-	defaultMountFlags := unix.MS_NOEXEC | unix.MS_NOSUID | unix.MS_NODEV
+	defaultMountFlags := unix.MS_NOEXEC | unix.MS_NOSUID | unix.MS_NODEV | unix.MS_RDONLY
 	config := &configs.Config{
 		Rootfs: "/home/dolf/Projects/Sshalama/rootfs/",
-		/*Capabilities: &configs.Capabilities{
+		Capabilities: &configs.Capabilities{
 			Bounding: []string{
-				"CAP_CHOWN",
-				"CAP_DAC_OVERRIDE",
-				"CAP_FSETID",
-				"CAP_FOWNER",
-				"CAP_MKNOD",
-				"CAP_NET_RAW",
 				"CAP_SETGID",
 				"CAP_SETUID",
-				"CAP_SETFCAP",
-				"CAP_SETPCAP",
-				"CAP_NET_BIND_SERVICE",
-				"CAP_SYS_CHROOT",
-				"CAP_KILL",
-				"CAP_AUDIT_WRITE",
+				"CAP_SYS_ADMIN",
 			},
 			Effective: []string{
-				"CAP_CHOWN",
-				"CAP_DAC_OVERRIDE",
-				"CAP_FSETID",
-				"CAP_FOWNER",
-				"CAP_MKNOD",
-				"CAP_NET_RAW",
 				"CAP_SETGID",
 				"CAP_SETUID",
-				"CAP_SETFCAP",
-				"CAP_SETPCAP",
-				"CAP_NET_BIND_SERVICE",
-				"CAP_SYS_CHROOT",
-				"CAP_KILL",
-				"CAP_AUDIT_WRITE",
+				"CAP_SYS_ADMIN",
 			},
-			Inheritable: []string{
-				"CAP_CHOWN",
-				"CAP_DAC_OVERRIDE",
-				"CAP_FSETID",
-				"CAP_FOWNER",
-				"CAP_MKNOD",
-				"CAP_NET_RAW",
-				"CAP_SETGID",
-				"CAP_SETUID",
-				"CAP_SETFCAP",
-				"CAP_SETPCAP",
-				"CAP_NET_BIND_SERVICE",
-				"CAP_SYS_CHROOT",
-				"CAP_KILL",
-				"CAP_AUDIT_WRITE",
-			},
+			Inheritable: []string{},
 			Permitted: []string{
-				"CAP_CHOWN",
-				"CAP_DAC_OVERRIDE",
-				"CAP_FSETID",
-				"CAP_FOWNER",
-				"CAP_MKNOD",
-				"CAP_NET_RAW",
 				"CAP_SETGID",
 				"CAP_SETUID",
-				"CAP_SETFCAP",
-				"CAP_SETPCAP",
-				"CAP_NET_BIND_SERVICE",
-				"CAP_SYS_CHROOT",
-				"CAP_KILL",
-				"CAP_AUDIT_WRITE",
+				"CAP_SYS_ADMIN",
 			},
-			Ambient: []string{
-				"CAP_CHOWN",
-				"CAP_DAC_OVERRIDE",
-				"CAP_FSETID",
-				"CAP_FOWNER",
-				"CAP_MKNOD",
-				"CAP_NET_RAW",
-				"CAP_SETGID",
-				"CAP_SETUID",
-				"CAP_SETFCAP",
-				"CAP_SETPCAP",
-				"CAP_NET_BIND_SERVICE",
-				"CAP_SYS_CHROOT",
-				"CAP_KILL",
-				"CAP_AUDIT_WRITE",
-			},
-		},*/
+			Ambient: []string{},
+		},
 		Namespaces: configs.Namespaces([]configs.Namespace{
 			{Type: configs.NEWNS},
 			{Type: configs.NEWUTS},
 			{Type: configs.NEWIPC},
 			{Type: configs.NEWPID},
-			//{Type: /configs.NEWUSER},
 			{Type: configs.NEWNET},
 		}),
 		Cgroups: &configs.Cgroup{
@@ -226,7 +162,7 @@ func (s *localMode) spawnWorker() (net.Conn, error) {
 		Devices:  configs.DefaultAutoCreatedDevices,
 		Hostname: "testing",
 		Mounts: []*configs.Mount{
-			{
+			{ // TODO: Find a way so we can get rid of procfs before handing over control to our worker process
 				Source:      "proc",
 				Destination: "/proc",
 				Device:      "proc",
@@ -266,20 +202,6 @@ func (s *localMode) spawnWorker() (net.Conn, error) {
 				Flags:       defaultMountFlags | unix.MS_RDONLY,
 			},
 		},
-		/*	UidMappings: []configs.IDMap{
-				{
-					ContainerID: 0,
-					HostID: 1000,
-					Size: 65536,
-				},
-			},
-			GidMappings: []configs.IDMap{
-				{
-					ContainerID: 0,
-					HostID: 1000,
-					Size: 65536,
-				},
-			},*/
 		Networks: []*configs.Network{
 			{
 				Type:    "loopback",
@@ -305,9 +227,8 @@ func (s *localMode) spawnWorker() (net.Conn, error) {
 
 	noNewPrivs := true
 	process := &libcontainer.Process{
-		Args: []string{"/bin/sshalama-worker"},
-		Env:  []string{"PATH=/bin"},
-		//User:   "dolf",
+		Args:            []string{"/bin/sshalama-worker"},
+		Env:             []string{"PATH=/bin:/usr/bin"},
 		NoNewPrivileges: &noNewPrivs,
 		Stdin:           os.Stdin,
 		Stdout:          os.Stdout,
@@ -317,8 +238,7 @@ func (s *localMode) spawnWorker() (net.Conn, error) {
 		},
 	}
 
-	err = container.Run(process)
-	if err != nil {
+	if err := container.Run(process); err != nil {
 		container.Destroy()
 		log.Fatal(err)
 	}
